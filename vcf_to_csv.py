@@ -56,10 +56,14 @@ def extract_contact_data(contact):
         label = address.params.get("TYPE", ["Address"])[0]
         street = address.value.street or ""
         city = address.value.city or ""
-        pobox = address.value.pobox or ""
         region = address.value.region or ""
         postal_code = address.value.code or ""
         country = address.value.country or ""
+        # Handle PO Box (if present in the street field)
+        pobox = ""
+        if "PO Box" in street:
+            pobox = street.split("PO Box")[1].strip()
+            street = street.split("PO Box")[0].strip()
         data[f"Address {i+1} - Label"] = label
         data[f"Address {i+1} - Street"] = street
         data[f"Address {i+1} - City"] = city
