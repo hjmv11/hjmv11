@@ -1,5 +1,5 @@
 import csv
-from vobject import readOne
+from vobject import readComponents  # Use readComponents instead of readOne
 
 # Define headers for the CSV file
 headers = [
@@ -35,48 +35,49 @@ def extract_contact_data(contact):
         data["Notes"] = contact.note.value
 
     # Extract emails
-    for i, email in enumerate(contact.contents.get("email", [])):
-        if i < 2:  # Limit to 2 emails
-            label = email.params.get("TYPE", ["E-mail"])[0]
-            value = email.value
-            data[f"E-mail {i+1} - Label"] = label
-            data[f"E-mail {i+1} - Value"] = value
+    emails = contact.contents.get("email", [])
+    for i, email in enumerate(emails[:2]):  # Limit to 2 emails
+        label = email.params.get("TYPE", ["E-mail"])[0]
+        value = email.value
+        data[f"E-mail {i+1} - Label"] = label
+        data[f"E-mail {i+1} - Value"] = value
 
     # Extract phones
-    for i, phone in enumerate(contact.contents.get("tel", [])):
-        if i < 2:  # Limit to 2 phones
-            label = phone.params.get("TYPE", ["Phone"])[0]
-            value = phone.value
-            data[f"Phone {i+1} - Label"] = label
-            data[f"Phone {i+1} - Value"] = value
+    phones = contact.contents.get("tel", [])
+    for i, phone in enumerate(phones[:2]):  # Limit to 2 phones
+        label = phone.params.get("TYPE", ["Phone"])[0]
+        value = phone.value
+        data[f"Phone {i+1} - Label"] = label
+        data[f"Phone {i+1} - Value"] = value
 
     # Extract addresses
-    for i, address in enumerate(contact.contents.get("adr", [])):
-        if i < 2:  # Limit to 2 addresses
-            label = address.params.get("TYPE", ["Address"])[0]
-            street = address.value.street or ""
-            city = address.value.city or ""
-            pobox = address.value.pobox or ""
-            region = address.value.region or ""
-            postal_code = address.value.code or ""
-            country = address.value.country or ""
-            data[f"Address {i+1} - Label"] = label
-            data[f"Address {i+1} - Street"] = street
-            data[f"Address {i+1} - City"] = city
-            data[f"Address {i+1} - PO Box"] = pobox
-            data[f"Address {i+1} - Region"] = region
-            data[f"Address {i+1} - Postal Code"] = postal_code
-            data[f"Address {i+1} - Country"] = country
+    addresses = contact.contents.get("adr", [])
+    for i, address in enumerate(addresses[:2]):  # Limit to 2 addresses
+        label = address.params.get("TYPE", ["Address"])[0]
+        street = address.value.street or ""
+        city = address.value.city or ""
+        pobox = address.value.pobox or ""
+        region = address.value.region or ""
+        postal_code = address.value.code or ""
+        country = address.value.country or ""
+        data[f"Address {i+1} - Label"] = label
+        data[f"Address {i+1} - Street"] = street
+        data[f"Address {i+1} - City"] = city
+        data[f"Address {i+1} - PO Box"] = pobox
+        data[f"Address {i+1} - Region"] = region
+        data[f"Address {i+1} - Postal Code"] = postal_code
+        data[f"Address {i+1} - Country"] = country
 
     return data
 
-# Read VCF file
+# Read VCF file and write to CSV
 def vcf_to_csv(vcf_file_path, csv_file_path):
     with open(vcf_file_path, "r", encoding="utf-8") as vcf_file:
         vcf_data = vcf_file.read()
 
     contacts = []
-    for contact in readOne(vcf_data).getChildren():
+    for contact in readComponents(vcf_data):  # Use readComponents to parse all vCards
+        print(contact)  # Debug: Print each contact
         contacts.append(extract_contact_data(contact))
 
     # Write to CSV
@@ -87,7 +88,7 @@ def vcf_to_csv(vcf_file_path, csv_file_path):
 
 # Run the script
 if __name__ == "__main__":
-    vcf_file_path = "contacts.vcf"  # Path to your VCF file
-    csv_file_path = "contacts.csv"  # Path to save the CSV file
+    vcf_file_path = "G:\\My Drive\\Personal\\Contact List\\iCloudContacts02052025.vcf"  # Updated path to your VCF file
+    csv_file_path = "G:\\My Drive\\Personal\\Contact List\\contacts.csv"  # Path to save the CSV file
     vcf_to_csv(vcf_file_path, csv_file_path)
     print(f"Conversion complete. CSV saved to {csv_file_path}")
