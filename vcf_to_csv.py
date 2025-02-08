@@ -167,7 +167,7 @@ def vcf_to_csv(vcf_file_path, csv_file_path):
 
 # Run the script
 if __name__ == "__main__":
-    vcf_file_path = "G:\\My Drive\\Personal\\Contact List\\iCloudContacts02052025.vcf"  # Updated path to your VCF file
-    csv_file_path = "G:\\My Drive\\Personal\\Contact List\\contacts.csv"  # Path to save the CSV file
+    vcf_file_path = "G:\\My Drive\\Personal\\Contact List\\iCloudExport.vcf"  # Updated path to your VCF file
+    csv_file_path = "G:\\My Drive\\Personal\\Contact List\\GoogleImport.csv"  # Path to save the CSV file
     vcf_to_csv(vcf_file_path, csv_file_path)
     print(f"Conversion complete. CSV saved to {csv_file_path}")
