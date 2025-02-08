@@ -71,20 +71,29 @@ def extract_contact_data(contact):
     # Extract notes
     if hasattr(contact, "note"):
         notes = contact.note.value
-        # Check notes for Other: or Work: 
+        # Check notes for Other: or Work: and clean up
         if re.search(r"Other: ", notes) or re.search(r"Work: ", notes):
-            notes.replace("Other: ", "").replace("Work: ", "")
+            notes = re.sub(r"Other: ", "", notes)
+            notes = re.sub(r"Work: ", "", notes)
+            notes = re.sub(r"[ \-]", "", notes)
         data["Notes"] = notes
         # Check for phone numbers in notes if Phone 1 and Phone 2 are empty
         if not data["Phone 1 - Value"] and not data["Phone 2 - Value"]:
             # Extract phone numbers with or without country code having 5 or more digits
             phone_numbers = re.findall(r"\+?\d{5,}", notes)
             if phone_numbers:
-                if phone_numbers[0].length < 12:
+                if len(phone_numbers[0]) < 12:
                     data["Phone 1 - Label"] = "WORK"
                 else:
                     data["Phone 1 - Label"] = "MOBILE"
                 data["Phone 1 - Value"] = format_phone_number(phone_numbers[0])
+        #Check for phone numbers in notes if Phone 1 is not empty and Phone 2 is empty
+        elif data["Phone 1 - Value"] and not data["Phone 2 - Value"]:
+            # Extract phone numbers with or without country code having 5 or more digits
+            phone_numbers = re.findall(r"\+?\d{5,}", notes)
+            if phone_numbers:
+                data["Phone 2 - Label"] = "OTHER"
+                data["Phone 2 - Value"] = format_phone_number(phone_numbers[0])
 
     # Extract emails
     emails = contact.contents.get("email", [])
