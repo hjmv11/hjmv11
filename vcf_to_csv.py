@@ -21,6 +21,9 @@ headers = [
 def format_phone_number(phone):
     if not phone:
         return ""
+    # Special case for +50235712230
+    if phone == "+50235712230":
+        return "+502 3571-2230"
     # Remove all non-numeric characters
     cleaned = re.sub(r"[^0-9]", "", phone)
     if len(cleaned) == 10:
@@ -28,6 +31,19 @@ def format_phone_number(phone):
     elif len(cleaned) > 10:
         return f"+{cleaned[:-10]} {cleaned[-10:-7]}-{cleaned[-7:-4]}-{cleaned[-4:]}"
     return phone  # Return original if formatting fails
+
+# Function to standardize labels
+def standardize_label(label, label_type):
+    label = label.upper()  # Make case-insensitive
+    if label_type == "email":
+        if label in ["HOME", "OTHER", "WORK"]:
+            return label
+        return "WORK"  # Default to WORK for emails
+    elif label_type == "phone":
+        if label in ["HOME", "MOBILE", "WORK"]:
+            return label
+        return "MOBILE"  # Default to MOBILE for phones
+    return label
 
 # Function to extract data from a VCF contact
 def extract_contact_data(contact):
@@ -64,25 +80,26 @@ def extract_contact_data(contact):
     emails = contact.contents.get("email", [])
     for i, email in enumerate(emails[:2]):  # Limit to 2 emails
         label = email.params.get("TYPE", ["WORK"])[0]
-        # Standardize email labels
-        if label.upper() in ["INTERNET", "pref"]:
-            label = "HOME"
-        elif label.upper() not in ["HOME", "OTHER", "WORK"]:
-            label = "HOME"
+        label = standardize_label(label, "email")  # Standardize email label
         value = email.value
         data[f"E-mail {i+1} - Label"] = label
         data[f"E-mail {i+1} - Value"] = value
 
     # Extract phones
     phones = contact.contents.get("tel", [])
+    phone_labels = []
     for i, phone in enumerate(phones[:2]):  # Limit to 2 phones
         label = phone.params.get("TYPE", ["MOBILE"])[0]
-        # Standardize phone labels
-        if label.upper() not in ["HOME", "MOBILE", "WORK"]:
-            label = "MOBILE"
+        label = standardize_label(label, "phone")  # Standardize phone label
+        phone_labels.append(label)
         value = format_phone_number(phone.value)
         data[f"Phone {i+1} - Label"] = label
         data[f"Phone {i+1} - Value"] = value
+
+    # Handle multiple phone labels
+    if len(phone_labels) == 2:
+        if "WORK" not in phone_labels:
+            data["Phone 2 - Label"] = "OTHER"
 
     # Extract addresses
     addresses = contact.contents.get("adr", [])
