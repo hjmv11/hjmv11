@@ -76,7 +76,6 @@ def extract_contact_data(contact):
             notes = re.sub(r"Other: ", "", notes)
             notes = re.sub(r"Work: ", "", notes)
             notes = re.sub(r"[ \-]", "", notes)
-        data["Notes"] = notes
         # Check for phone numbers in notes if Phone 1 and Phone 2 are empty
         if not data["Phone 1 - Value"] and not data["Phone 2 - Value"]:
             # Extract phone numbers with or without country code having 5 or more digits
@@ -87,13 +86,19 @@ def extract_contact_data(contact):
                 else:
                     data["Phone 1 - Label"] = "MOBILE"
                 data["Phone 1 - Value"] = format_phone_number(phone_numbers[0])
+            notes = re.sub(r"\+?\d{5,}", "", notes)  # Remove phone numbers from notes
         #Check for phone numbers in notes if Phone 1 is not empty and Phone 2 is empty
         elif data["Phone 1 - Value"] and not data["Phone 2 - Value"]:
             # Extract phone numbers with or without country code having 5 or more digits
             phone_numbers = re.findall(r"\+?\d{5,}", notes)
-            if phone_numbers:
+            if phone_numbers and phone_numbers[0] != data["Phone 1 - Value"]: # Check if phone number is different
                 data["Phone 2 - Label"] = "OTHER"
                 data["Phone 2 - Value"] = format_phone_number(phone_numbers[0])
+            notes = re.sub(r"\+?\d{5,}", "", notes)  # Remove phone numbers from notes
+        # Check notes for Code, Pin, or Enter if not empty
+        if not re.search(r"CODE|PIN|ENTER", notes.capitalize()) or re.search(r":", notes):
+            notes = ""  # Clear notes if no relevant information found
+        data["Notes"] = notes
 
     # Extract emails
     emails = contact.contents.get("email", [])
