@@ -96,8 +96,9 @@ def extract_contact_data(contact):
                 data["Phone 2 - Value"] = format_phone_number(phone_numbers[0])
             notes = re.sub(r"\+?\d{5,}", "", notes)  # Remove phone numbers from notes
         # Check notes for Code, Pin, or Enter if not empty
-        if not re.search(r"CODE|PIN|ENTER", notes.capitalize()) or re.search(r":", notes):
-            notes = ""  # Clear notes if no relevant information found
+        if not re.search(r"CODE|PIN|ENTER", notes.capitalize()):
+            if re.search(r":", notes):
+                notes = ""  # Clear notes if no relevant information found
         data["Notes"] = notes
 
     # Extract emails
