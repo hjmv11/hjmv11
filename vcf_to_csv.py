@@ -66,9 +66,9 @@ def extract_contact_data(contact):
         label = email.params.get("TYPE", ["WORK"])[0]
         # Standardize email labels
         if label.upper() in ["INTERNET", "pref"]:
-            label = "WORK"
+            label = "HOME"
         elif label.upper() not in ["HOME", "OTHER", "WORK"]:
-            label = "WORK"
+            label = "HOME"
         value = email.value
         data[f"E-mail {i+1} - Label"] = label
         data[f"E-mail {i+1} - Value"] = value
