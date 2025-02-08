@@ -1,16 +1,33 @@
 import csv
-from vobject import readComponents  # Use readComponents instead of readOne
+import re
+from vobject import readComponents
 
-# Define headers for the CSV file
+# Define updated headers for the CSV file
 headers = [
-    "First Name", "Last Name", "Organization Name", "Birthday", "Notes",
-    "E-mail 1 - Label", "E-mail 1 - Value", "E-mail 2 - Label", "E-mail 2 - Value",
+    "Name Prefix", "First Name", "Middle Name", "Last Name", "Name Suffix",
+    "Phonetic First Name", "Phonetic Middle Name", "Phonetic Last Name", "Nickname",
+    "File As", "E-mail 1 - Label", "E-mail 1 - Value", "E-mail 2 - Label", "E-mail 2 - Value",
     "Phone 1 - Label", "Phone 1 - Value", "Phone 2 - Label", "Phone 2 - Value",
-    "Address 1 - Label", "Address 1 - Street", "Address 1 - City", "Address 1 - PO Box",
-    "Address 1 - Region", "Address 1 - Postal Code", "Address 1 - Country",
-    "Address 2 - Label", "Address 2 - Street", "Address 2 - City", "Address 2 - PO Box",
-    "Address 2 - Region", "Address 2 - Postal Code", "Address 2 - Country"
+    "Address 1 - Label", "Address 1 - Country", "Address 1 - Street", "Address 1 - Extended Address",
+    "Address 1 - City", "Address 1 - Region", "Address 1 - Postal Code", "Address 1 - PO Box",
+    "Address 2 - Label", "Address 2 - Country", "Address 2 - Street", "Address 2 - Extended Address",
+    "Address 2 - City", "Address 2 - Region", "Address 2 - Postal Code", "Address 2 - PO Box",
+    "Organization Name", "Organization Title", "Organization Department", "Birthday",
+    "Event 1 - Label", "Event 1 - Value", "Relation 1 - Label", "Relation 1 - Value",
+    "Website 1 - Label", "Website 1 - Value", "Custom Field 1 - Label", "Custom Field 1 - Value", "Notes", "Labels"
 ]
+
+# Function to clean and format phone numbers
+def format_phone_number(phone):
+    if not phone:
+        return ""
+    # Remove all non-numeric characters
+    cleaned = re.sub(r"[^0-9]", "", phone)
+    if len(cleaned) == 10:
+        return f"+1 {cleaned[:3]}-{cleaned[3:6]}-{cleaned[6:]}"
+    elif len(cleaned) > 10:
+        return f"+{cleaned[:-10]} {cleaned[-10:-7]}-{cleaned[-7:-4]}-{cleaned[-4:]}"
+    return phone  # Return original if formatting fails
 
 # Function to extract data from a VCF contact
 def extract_contact_data(contact):
@@ -21,6 +38,7 @@ def extract_contact_data(contact):
         name_parts = contact.n.value
         data["First Name"] = name_parts.given or ""
         data["Last Name"] = name_parts.family or ""
+        data["Middle Name"] = name_parts.additional or ""
 
     # Extract organization
     if hasattr(contact, "org"):
@@ -28,16 +46,29 @@ def extract_contact_data(contact):
 
     # Extract birthday
     if hasattr(contact, "bday"):
-        data["Birthday"] = contact.bday.value
+        birthday = contact.bday.value
+        # Clean birthday (remove non-numeric characters)
+        data["Birthday"] = re.sub(r"[^0-9]", "", birthday)
 
     # Extract notes
     if hasattr(contact, "note"):
-        data["Notes"] = contact.note.value
+        notes = contact.note.value
+        data["Notes"] = notes
+        # Check for phone numbers in notes if Phone 1 and Phone 2 are empty
+        if not data["Phone 1 - Value"] and not data["Phone 2 - Value"]:
+            phone_numbers = re.findall(r"\+?\d[\d -]{8,}\d", notes)
+            if phone_numbers:
+                data["Phone 1 - Value"] = format_phone_number(phone_numbers[0])
 
     # Extract emails
     emails = contact.contents.get("email", [])
     for i, email in enumerate(emails[:2]):  # Limit to 2 emails
-        label = email.params.get("TYPE", ["E-mail"])[0]
+        label = email.params.get("TYPE", ["WORK"])[0]
+        # Standardize email labels
+        if label.upper() in ["INTERNET", "pref"]:
+            label = "WORK"
+        elif label.upper() not in ["HOME", "OTHER", "WORK"]:
+            label = "WORK"
         value = email.value
         data[f"E-mail {i+1} - Label"] = label
         data[f"E-mail {i+1} - Value"] = value
@@ -45,8 +76,11 @@ def extract_contact_data(contact):
     # Extract phones
     phones = contact.contents.get("tel", [])
     for i, phone in enumerate(phones[:2]):  # Limit to 2 phones
-        label = phone.params.get("TYPE", ["Phone"])[0]
-        value = phone.value
+        label = phone.params.get("TYPE", ["MOBILE"])[0]
+        # Standardize phone labels
+        if label.upper() not in ["HOME", "MOBILE", "WORK"]:
+            label = "MOBILE"
+        value = format_phone_number(phone.value)
         data[f"Phone {i+1} - Label"] = label
         data[f"Phone {i+1} - Value"] = value
 
@@ -81,7 +115,6 @@ def vcf_to_csv(vcf_file_path, csv_file_path):
 
     contacts = []
     for contact in readComponents(vcf_data):  # Use readComponents to parse all vCards
-        print(contact)  # Debug: Print each contact
         contacts.append(extract_contact_data(contact))
 
     # Write to CSV
@@ -92,7 +125,7 @@ def vcf_to_csv(vcf_file_path, csv_file_path):
 
 # Run the script
 if __name__ == "__main__":
-    vcf_file_path = "G:\\My Drive\\Personal\\Contact List\\iCloudContacts02052025.vcf"  # Updated path to your VCF file
-    csv_file_path = "G:\\My Drive\\Personal\\Contact List\\contacts.csv"  # Path to save the CSV file
+    vcf_file_path = r"G:\My Drive\Personal\Contact List\iCloudContacts02052025.vcf"  # Updated path to your VCF file
+    csv_file_path = "contacts.csv"  # Path to save the CSV file
     vcf_to_csv(vcf_file_path, csv_file_path)
     print(f"Conversion complete. CSV saved to {csv_file_path}")
