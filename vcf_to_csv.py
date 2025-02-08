@@ -30,6 +30,8 @@ def format_phone_number(phone):
         return f"+1 {cleaned[:3]}-{cleaned[3:6]}-{cleaned[6:]}"
     elif len(cleaned) > 10:
         return f"+{cleaned[:-10]} {cleaned[-10:-7]}-{cleaned[-7:-4]}-{cleaned[-4:]}"
+    elif len(cleaned) < 10:
+        return f"{cleaned}"
     return phone  # Return original if formatting fails
 
 # Function to standardize labels
@@ -38,7 +40,7 @@ def standardize_label(label, label_type):
     if label_type == "email":
         if label in ["HOME", "OTHER", "WORK"]:
             return label
-        return "WORK"  # Default to WORK for emails
+        return "HOME"  # Default to WORK for emails
     elif label_type == "phone":
         if label in ["HOME", "MOBILE", "WORK"]:
             return label
@@ -69,17 +71,25 @@ def extract_contact_data(contact):
     # Extract notes
     if hasattr(contact, "note"):
         notes = contact.note.value
+        # Check notes for Other: or Work: 
+        if re.search(r"Other: ", notes) or re.search(r"Work: ", notes):
+            notes.replace("Other: ", "").replace("Work: ", "")
         data["Notes"] = notes
         # Check for phone numbers in notes if Phone 1 and Phone 2 are empty
         if not data["Phone 1 - Value"] and not data["Phone 2 - Value"]:
-            phone_numbers = re.findall(r"\+?\d[\d -]{8,}\d", notes)
+            # Extract phone numbers with or without country code having 5 or more digits
+            phone_numbers = re.findall(r"\+?\d{5,}", notes)
             if phone_numbers:
+                if phone_numbers[0].length < 12:
+                    data["Phone 1 - Label"] = "WORK"
+                else:
+                    data["Phone 1 - Label"] = "MOBILE"
                 data["Phone 1 - Value"] = format_phone_number(phone_numbers[0])
 
     # Extract emails
     emails = contact.contents.get("email", [])
     for i, email in enumerate(emails[:2]):  # Limit to 2 emails
-        label = email.params.get("TYPE", ["WORK"])[0]
+        label = email.params.get("TYPE", ["HOME"])[0]
         label = standardize_label(label, "email")  # Standardize email label
         value = email.value
         data[f"E-mail {i+1} - Label"] = label
