@@ -7,6 +7,12 @@ def rename_files_with_swapped_parts(folder_path):
     
     # Iterate through all files in the specified folder
     for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        
+        # Skip directories
+        if os.path.isdir(file_path):
+            continue
+            
         match = pattern.match(filename)
         if match:
             # Extract the parts of the filename
@@ -18,20 +24,27 @@ def rename_files_with_swapped_parts(folder_path):
             new_filename = f"{second_part}_{first_part}{extension}"
             
             # Get full paths for both old and new filenames
-            old_path = os.path.join(folder_path, filename)
             new_path = os.path.join(folder_path, new_filename)
             
             # Rename the file
             try:
-                os.rename(old_path, new_path)
+                os.rename(file_path, new_path)
                 print(f"Renamed: {filename} -> {new_filename}")
             except OSError as e:
                 print(f"Error renaming {filename}: {e}")
 
+def process_folder_recursively(base_folder):
+    # Walk through all directories and subdirectories
+    for root, dirs, files in os.walk(base_folder):
+        print(f"\nProcessing folder: {root}")
+        rename_files_with_swapped_parts(root)
+
 if __name__ == "__main__":
-    folder_path = input("Enter the folder path: ")
-    if os.path.isdir(folder_path):
-        rename_files_with_swapped_parts(folder_path)
-        print("File renaming complete!")
+    base_folder = r"G:\My Drive\Personal\Language\Learn Japanese - Ultimate Getting Started with Japanese"
+    
+    if os.path.isdir(base_folder):
+        print(f"Starting file renaming in: {base_folder}")
+        process_folder_recursively(base_folder)
+        print("\nFile renaming complete!")
     else:
-        print("Invalid folder path. Please provide a valid directory.")
+        print("Invalid base folder path. Please verify the path exists.")
